@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox
 import sqlite3
 
 
@@ -29,6 +30,10 @@ def add_order():
     order_details = order_details_entry.get()
 
     if not customer_name or not order_details:
+        messagebox.showwarning(
+            "Предупреждение",
+            "Заполните имя клиента и детали заказа"
+        )
         return
 
     conn = sqlite3.connect("business_orders.db")
@@ -69,6 +74,31 @@ def view_orders():
     conn.close()
 
 
+def complete_order():
+    selected_item = tree.selection()
+
+    if selected_item:
+        order_id = tree.item(selected_item, "values")[0]
+
+        conn = sqlite3.connect("business_orders.db")
+        cur = conn.cursor()
+
+        cur.execute(
+            "UPDATE orders SET status='Завершён' WHERE id=?",
+            (order_id,)
+        )
+
+        conn.commit()
+        conn.close()
+
+        view_orders()
+    else:
+        messagebox.showwarning(
+            "Предупреждение",
+            "Выберите заказ для завершения"
+        )
+
+
 # ---------------- Запуск ----------------
 
 init_db()
@@ -78,18 +108,21 @@ app.title("Система управления заказами")
 app.geometry("700x400")
 
 
+# Имя клиента
 tk.Label(app, text="Имя клиента").pack()
 
 customer_name_entry = tk.Entry(app)
 customer_name_entry.pack()
 
 
+# Детали заказа
 tk.Label(app, text="Детали заказа").pack()
 
 order_details_entry = tk.Entry(app)
 order_details_entry.pack()
 
 
+# Кнопка добавления
 add_button = tk.Button(
     app,
     text="Добавить заказ",
@@ -98,6 +131,7 @@ add_button = tk.Button(
 add_button.pack()
 
 
+# Таблица
 columns = ("id", "customer_name", "order_details", "status")
 
 tree = ttk.Treeview(
@@ -112,6 +146,18 @@ for column in columns:
 tree.pack(fill="both", expand=True)
 
 
+# Кнопка завершения
+complete_button = tk.Button(
+    app,
+    text="Завершить заказ",
+    command=complete_order
+)
+complete_button.pack()
+
+
+# Показываем существующие заказы
 view_orders()
 
+
+# mainloop всегда в самом конце
 app.mainloop()
